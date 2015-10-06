@@ -169,7 +169,7 @@ function inc(importance) {
   return gulp.src(['./package.json'])
     .pipe(bump({type: importance}))
     .pipe(gulp.dest('./'))
-    .pipe(addsrc([paths.css.dest + '/*', paths.js.dest + '/*']))
+    .pipe(addsrc(basePaths.dest + '/**/*'))
     .pipe(git.add({args: '-f'}))
     .pipe(git.commit('Compile and increment version for deployment'))
     .pipe(filter('package.json'))
