@@ -4,6 +4,7 @@
 var basePaths = {
 	src: 'src/',
 	dest: 'dest/',
+  lib: 'libraries/'
 };
 
 var paths = {
@@ -43,7 +44,25 @@ var gulp = require('gulp'),
     svgo = require('gulp-svgo'),
     svg2png = require('gulp-svg2png'),
     del = require('del'),
+    install = require('gulp-install'),
     neat = require('node-neat').includePaths;
+
+//////////////////////////////
+// Install dependencies
+//////////////////////////////
+gulp.task('install', function() {
+  return gulp.src(['./bower.json'])
+      .pipe(install());
+});
+
+//////////////////////////////
+// Clean dest dir
+//////////////////////////////
+gulp.task('clean', function () {
+  return del([
+    'dest/*'
+  ]);
+});
 
 //////////////////////////////
 // Concatenate, minify and uglify JS with sourcemap
@@ -59,7 +78,7 @@ gulp.task('javascript', function() {
     .pipe(livereload());
 });
 
-gulp.task('javascript-dist', function() {
+gulp.task('javascript-dist', ['install', 'clean'], function() {
   return gulp.src([paths.js.src + '/globals/**/*.js', paths.js.src + '/components/**/*.js', paths.js.src + '/layouts/**/*.js'])
     .pipe(concat('theme.behaviors.min.js'))
     .pipe(uglify({mangle: true}).on('error', function(e) { console.log('\x07',e.message); return this.end(); }))
@@ -90,7 +109,7 @@ gulp.task('sass', function () {
     .pipe(livereload());
 });
 
-gulp.task('sass-dist', ['sprite'], function () {
+gulp.task('sass-dist', ['install', 'clean', 'sprite'], function () {
   return gulp.src([paths.css.src + '/*.scss', paths.css.src + '/fallback/*.scss'])
     .pipe(sass({
       includePaths: ['styles'].concat(neat),
@@ -154,22 +173,13 @@ gulp.task('watch', function () {
 });
 
 //////////////////////////////
-// Clean dest dir
-//////////////////////////////
-gulp.task('clean', function () {
-  return del([
-    'dest/*'
-  ]);
-});
-
-//////////////////////////////
 // Commit changes and push
 //////////////////////////////
 function inc(importance) {
   return gulp.src(['./package.json'])
     .pipe(bump({type: importance}))
     .pipe(gulp.dest('./'))
-    .pipe(addsrc(basePaths.dest + '/**/*'))
+    .pipe(addsrc([basePaths.dest + '**/*', basePaths.lib + '**/*']))
     .pipe(git.add({args: '-f'}))
     .pipe(git.commit('Compile and increment version for deployment'))
     .pipe(filter('package.json'))
@@ -181,7 +191,7 @@ function inc(importance) {
 //////////////////////////////
 gulp.task('sprite', ['pngSprite']);
 gulp.task('default', ['build', 'watch']);
-gulp.task('build', ['clean', 'sass-dist', 'javascript-dist']);
+gulp.task('build', ['javascript-dist', 'sass-dist']);
 gulp.task('patch', function() { return inc('patch'); });
 gulp.task('feature', function() { return inc('minor'); });
 gulp.task('release', function() { return inc('major'); });
