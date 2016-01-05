@@ -3,8 +3,7 @@
 
 var basePaths = {
 	src: 'src/',
-	dest: 'dest/',
-  lib: 'libraries/'
+	dest: 'dest/'
 };
 
 var paths = {
@@ -34,14 +33,9 @@ var gulp = require('gulp'),
     concat = require('gulp-concat'),
     uglify = require('gulp-uglify'),
     sourcemaps = require('gulp-sourcemaps'),
-    git = require('gulp-git'),
-    bump = require('gulp-bump'),
-    filter = require('gulp-filter'),
-    tagVersion = require('gulp-tag-version'),
-    addsrc = require('gulp-add-src'),
     livereload = require('gulp-livereload'),
     svgSprite = require('gulp-svg-sprite'),
-    svgo = require('gulp-svgo'),
+    imagemin = require('gulp-imagemin'),
     svg2png = require('gulp-svg2png'),
     del = require('del'),
     install = require('gulp-install'),
@@ -50,23 +44,33 @@ var gulp = require('gulp'),
 //////////////////////////////
 // Install dependencies
 //////////////////////////////
-gulp.task('install', function() {
+
+gulp.task('install-dev', function() {
   return gulp.src(['./bower.json'])
-      .pipe(install());
+    .pipe(install());
+});
+
+gulp.task('install-prod', ['clean-lib'], function() {
+  return gulp.src(['./bower.json'])
+    .pipe(install({production: true}));
 });
 
 //////////////////////////////
-// Clean dest dir
+// Clean dest directory
 //////////////////////////////
-gulp.task('clean', function () {
-  return del([
-    'dest/*'
-  ]);
+gulp.task('clean-dest', function () {
+  del(['dest/**']);
+});
+
+gulp.task('clean-lib', ['javascript-dist', 'sass-dist'], function () {
+  del(['libraries/**']);
 });
 
 //////////////////////////////
-// Concatenate, minify and uglify JS with sourcemap
+// JavaScript
 //////////////////////////////
+
+// Concatenate with sourcemap and reload
 gulp.task('javascript', function() {
   return gulp.src([paths.js.src + '/globals/**/*.js', paths.js.src + '/components/**/*.js', paths.js.src + '/layouts/**/*.js'])
     .pipe(jshint())
@@ -78,13 +82,19 @@ gulp.task('javascript', function() {
     .pipe(livereload());
 });
 
-gulp.task('javascript-dist', ['install', 'clean'], function() {
+// Concatenate and minify for deployment
+gulp.task('javascript-dist', ['install-dev', 'clean-dest'], function() {
   return gulp.src([paths.js.src + '/globals/**/*.js', paths.js.src + '/components/**/*.js', paths.js.src + '/layouts/**/*.js'])
     .pipe(concat('theme.behaviors.min.js'))
     .pipe(uglify({mangle: true}).on('error', function(e) { console.log('\x07',e.message); return this.end(); }))
     .pipe(gulp.dest(paths.js.dest));
 });
 
+//////////////////////////////
+// Sass
+//////////////////////////////
+
+// Process with nested style and sourcemap and reload
 gulp.task('sass', function () {
   return gulp.src([paths.css.src + '/*.scss'])
     .pipe(sourcemaps.init())
@@ -109,7 +119,8 @@ gulp.task('sass', function () {
     .pipe(livereload());
 });
 
-gulp.task('sass-dist', ['install', 'clean', 'sprite'], function () {
+// Process with compressed style for distribution
+gulp.task('sass-dist', ['install-dev', 'clean-dest', 'sprite'], function () {
   return gulp.src([paths.css.src + '/*.scss', paths.css.src + '/fallback/*.scss'])
     .pipe(sass({
       includePaths: ['styles'].concat(neat),
@@ -130,9 +141,16 @@ gulp.task('sass-dist', ['install', 'clean', 'sprite'], function () {
     .pipe(gulp.dest(paths.css.dest));
 });
 
+//////////////////////////////
+// SVG Sprite with PNG fallback
+//////////////////////////////
+
 gulp.task('svgSprite', function() {
   return gulp.src(paths.sprite.src + '/*.svg')
-    .pipe(svgo())
+    .pipe(imagemin({
+      progressive: true,
+      svgoPlugins: [{removeViewBox: false}]
+    }))
     .pipe(svgSprite({
       'mode': {
         'css': {
@@ -164,7 +182,8 @@ gulp.task('pngSprite', ['svgSprite'], function() {
 //////////////////////////////
 // Watch
 //////////////////////////////
-gulp.task('watch', function () {
+
+gulp.task('watch', ['install-dev'], function () {
   livereload.listen();
   gulp.watch(paths.sprite.src + '/*.svg', ['sprite']);
   gulp.watch(paths.js.src + '/**/*.js', ['javascript']);
@@ -173,27 +192,11 @@ gulp.task('watch', function () {
 });
 
 //////////////////////////////
-// Commit changes and push
-//////////////////////////////
-function inc(importance) {
-  return gulp.src(['./package.json'])
-    .pipe(bump({type: importance}))
-    .pipe(gulp.dest('./'))
-    .pipe(addsrc([basePaths.dest + '**/*', basePaths.lib + '**/*']))
-    .pipe(git.add({args: '-f'}))
-    .pipe(git.commit('Compile and increment version for deployment'))
-    .pipe(filter('package.json'))
-    .pipe(tagVersion({prefix: '7.x-'}));
-}
-
-//////////////////////////////
 // Build Tasks
 //////////////////////////////
+
 gulp.task('sprite', ['pngSprite']);
-gulp.task('default', ['build', 'watch']);
-gulp.task('build', ['javascript-dist', 'sass-dist']);
-gulp.task('patch', function() { return inc('patch'); });
-gulp.task('feature', function() { return inc('minor'); });
-gulp.task('release', function() { return inc('major'); });
+gulp.task('default', ['watch']);
+gulp.task('build', ['install-prod']);
 
 }());
