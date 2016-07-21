@@ -21,16 +21,21 @@
     "matchmedia": "~0.2.0",
     "jquery.scrollTo": "~1.4.14",
     "hammerjs": "~2.0.3",
-    "jquery.easing": "~1.3.0",
+    "jquery.easing": "~1.3.1",
     "jquery-mousewheel": "~3.1.12",
     "velocity": "1.2.1",
     "owlcarousel": "~1.3.2",
-    "jquery.fitvids": "fitvids#~1.1.0"
+    "jquery.fitvids": "fitvids#~1.1.0",
+    "maximage": "*",
+    "foundation-sites": "^6.2.0",
+    "font-awesome": "^4.5.0",
+    "REM-unit-polyfill": "^1.3.4"
   },
   "devDependencies": {
     "breakpoint-sass": "~2.6.1",
     "sass-toolkit": "~2.9.0",
     "susy": "~2.2.5",
-    "jacket": "~1.1.1"
+    "jacket": "~1.1.1",
+    "motion-ui": "^1.2.2"
   }
 }
