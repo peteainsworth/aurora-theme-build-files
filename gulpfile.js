@@ -3,8 +3,7 @@
 
 var basePaths = {
 	src: 'src/',
-	dest: 'dest/',
-  lib: 'libraries/'
+	dest: 'dest/'
 };
 
 var paths = {
@@ -29,7 +28,6 @@ var paths = {
 var gulp = require('gulp'),
     sass = require('gulp-sass'),
     importOnce = require('node-sass-import-once'),
-    autoprefixer = require('gulp-autoprefixer'),
     jshint = require('gulp-jshint'),
     stylish = require('jshint-stylish'),
     concat = require('gulp-concat'),
@@ -61,11 +59,11 @@ gulp.task('install-prod', ['clean-lib'], function() {
 // Clean dest directory
 //////////////////////////////
 gulp.task('clean-dest', function () {
-  del([basePaths.dest + '**']);
+  del(['dest/**']);
 });
 
 gulp.task('clean-lib', ['javascript-dist', 'sass-dist'], function () {
-  del([basePaths.lib + '**']);
+  del(['libraries/**']);
 });
 
 //////////////////////////////
@@ -140,7 +138,6 @@ gulp.task('sass-dist', ['install-dev', 'clean-dest', 'sprite'], function () {
       console.log(error);
       this.emit('end');
     }))
-    .pipe(autoprefixer())
     .pipe(gulp.dest(paths.css.dest));
 });
 
